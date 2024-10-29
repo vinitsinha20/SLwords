@@ -1,7 +1,17 @@
 #include<bits/stdc++.h>
 
 using namespace std;
-
+struct DSU {
+	vector<int> e; void init(int N) { e = vector<int>(N,-1); }
+	int get(int x) { return e[x] < 0 ? x : e[x] = get(e[x]); } 
+	bool sameSet(int a, int b) { return get(a) == get(b); }
+	int size(int x) { return -e[get(x)]; }
+	bool unite(int x, int y) { // union by size
+		x = get(x), y = get(y); if (x == y) return 0;
+		if (e[x] > e[y]) swap(x,y);
+		e[x] += e[y]; e[y] = x; return 1;
+	}
+};
 struct rt{
     int i;
     vector<int> weights;
@@ -31,6 +41,8 @@ int compare_letter(int i, int j)
 {
     if(i==0)
         return 0;
+    if(j==0)
+        return 1;
     return i<j;
 }   
 int compare_word( vector<int>& a, vector<int>& b) 
@@ -108,17 +120,17 @@ int check_root(int n, vector<int>& root)
     subtract_root( n, delta, root, check );
     return check_finite_root(n,check);
 }
-void conjugation_part(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, vector<int>& basis)
+void conjugation_part(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, vector<int>& basis, int n)
 {
     int p = bracket1.size();
-    basis.push_back(0);
-    basis.push_back(bracket2[0][1]);
-    basis.push_back(bracket2[0][2]);
+    basis[0]=0;
+    basis[1] = bracket2[0][1];
+    basis[2] =bracket2[0][2];
     for(int i=0;i<p;i++)
-        if(bracket1[i][2]==bracket2[0][1])
-            basis[0]+= bracket1[i][0];
-        else if(bracket1[i][1]==bracket2[0][2])
-            basis[0]-= bracket1[i][0];
+        if(bracket1[i][2]==bracket2[0][1] || bracket1[i][1]+bracket2[0][2] == 2*n+2)
+            basis[0]+= bracket1[i][0]*bracket2[0][0];
+        else if(bracket1[i][1]==bracket2[0][2]|| bracket1[i][2]+bracket2[0][1] == 2*n+2)
+            basis[0]-= bracket1[i][0]*bracket2[0][0];
 }
 void conjugation(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, vector<vector<int>>& res, int n){
     if(bracket1[0][1]==bracket1[0][2] && bracket2[0][1]==bracket2[0][2])
@@ -126,13 +138,13 @@ void conjugation(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, v
     vector<int> basis(3,0);
     if(bracket1[0][1]==bracket1[0][2])
     {
-        conjugation_part(bracket1, bracket2, basis);
+        conjugation_part(bracket1, bracket2, basis,n);
         if(basis[0]!=0)
             res.push_back(basis);
     }
     else if(bracket2[0][1] == bracket2[0][2])
     {
-        conjugation_part(bracket2,bracket1,basis);
+        conjugation_part(bracket2,bracket1,basis, n);
         if(basis[0]!=0)
         {
             basis[0]= -basis[0];
@@ -153,7 +165,6 @@ void conjugation(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, v
                 basis[2] = dummy;
                 basis[0]=-basis[0];
             }
-            res.push_back(basis);
             vector<int> basis1(3,0);
             basis1[0]= -bracket1[0][0] * bracket2[0][0];
             basis1[1] = bracket2[0][1];
@@ -165,7 +176,10 @@ void conjugation(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, v
                 basis1[2] = dummy;
                 basis[0]=-basis[0];
             }
-            res.push_back(basis1);
+            if(basis1[1]+basis1[2]< 2*n+2)
+                res.push_back(basis1);
+            if(basis[1]+basis[2]< 2*n+2)
+                res.push_back(basis);
         }
         else if(bracket1[0][2]== bracket2[0][1])
         {
@@ -211,9 +225,9 @@ void conjugation(vector<vector<int>>& bracket1, vector<vector<int>>& bracket2, v
         }
         else if(bracket1[0][2]+ bracket2[0][2]== 2*n+2)
         {
-            basis[0] = -bracket1[0][0] * bracket2[0][0];
-            basis[1] = bracket1[0][1];
-            basis[2] = bracket1[0][2];
+            basis[0] = bracket1[0][0] * bracket2[0][0];
+            basis[1] = bracket2[0][1];
+            basis[2] = 2*n+2-bracket1[0][1];
             if(basis[1]+basis[2]>= 2*n+2)
             {
                 int dummy = 2*n+2 - basis[1];
@@ -252,7 +266,7 @@ void add_list_real(vector<struct rt>& list, vector<int>& root, int n)
         }
         else
         {
-            vector<int> vec{1,1,2*n};
+            vector<int> vec{1,2*n,1};
             input.bracket.push_back(vec);
         }
         list.push_back(input);
@@ -288,53 +302,40 @@ void add_list_real(vector<struct rt>& list, vector<int>& root, int n)
             if(list[a].i>0)
             {
                 a=a+1-list[a].i;
-                for(int i=0;i<n;i++)
+                for(int k=0;k<n;k++)
                 {
                     vector<vector<int>> new_bracket;
-                    conjugation(list[i].bracket, list[a].bracket, new_bracket, n);
+                    conjugation(list[i].bracket, list[a+k].bracket, new_bracket,n);
                     if(new_bracket.size()>0)
                     {
                         vector<int> new_SL;
-                        if(compare_word(list[i].SLword, list[a].SLword))
+                        if(compare_word(list[i].SLword, list[a+k].SLword))
                         {
                             for(int j =0; j< list[i].SLword.size();j++)
-                            {
-                                int dum = list[i].SLword[j];
-                                new_SL.push_back(dum);
-                            }
-                            for(int j =0; j< list[a].SLword.size();j++)
-                            {
-                                int dum = list[a].SLword[j];
-                                new_SL.push_back(dum);
-                            }
+                                new_SL.push_back(list[i].SLword[j]);
+                            for(int j =0; j< list[a+k].SLword.size();j++)
+                                new_SL.push_back(list[a+k].SLword[j]);
                         }
                         else
                         {
-                            for(int j =0; j< list[a].SLword.size();j++)
-                            {
-                                int dum = list[a].SLword[j];
-                                new_SL.push_back(dum);
-                            }
+                            for(int j=0;j<new_bracket.size();j++)
+                                new_bracket[j][0]=-new_bracket[j][0];
+                            for(int j =0; j< list[a+k].SLword.size();j++)
+                                new_SL.push_back(list[a+k].SLword[j]);
                             for(int j =0; j< list[i].SLword.size();j++)
-                            {
-                                int dum = list[i].SLword[j];
-                                new_SL.push_back(dum);
-                            }
+                                new_SL.push_back(list[i].SLword[j]);
                         }
                         if(flag)
                         {
                             flag = 0;
-                            for(int k=0;k<new_SL.size();k++)
-                            {
-                                int dum = new_SL[k];
-                                input.SLword.push_back(dum);
-                            }
-                            for(int k=0;k<new_bracket.size();k++)
+                            for(int j=0;j<new_SL.size();j++)
+                                input.SLword.push_back(new_SL[j]);
+                            for(int j=0;j<new_bracket.size();j++)
                             {
                                 vector<int> vec(3,0);
-                                vec[0] = new_bracket[k][0];
-                                vec[1] = new_bracket[k][1];
-                                vec[2] = new_bracket[k][2];
+                                vec[0] = new_bracket[j][0];
+                                vec[1] = new_bracket[j][1];
+                                vec[2] = new_bracket[j][2];
                                 input.bracket.push_back(vec);
                             }
                             list.push_back(input);
@@ -342,10 +343,10 @@ void add_list_real(vector<struct rt>& list, vector<int>& root, int n)
                         else if(compare_word( list[list.size()-1].SLword, new_SL))
                         {   
                             list[list.size()-1].bracket.clear();
-                            for(int k=0;k<new_bracket.size();k++)
-                                list[list.size()-1].bracket.push_back(new_bracket[k]);
-                            for(int k=0;k<new_SL.size();k++)
-                                list[list.size()-1].SLword[k]= new_SL[k];
+                            for(int j=0;j<new_bracket.size();j++)
+                                list[list.size()-1].bracket.push_back(new_bracket[j]);
+                            for(int j=0;j<new_SL.size();j++)
+                                list[list.size()-1].SLword[j]= new_SL[j];
                         }
                     }
                 }
@@ -366,6 +367,8 @@ void add_list_real(vector<struct rt>& list, vector<int>& root, int n)
                     }
                     else
                     {
+                        for(int j=0;j<new_bracket.size();j++)
+                            new_bracket[j][0]=-new_bracket[j][0];
                         for(int j =0; j< list[a].SLword.size();j++)
                             new_SL.push_back(list[a].SLword[j]);
                         for(int j =0; j< list[i].SLword.size();j++)
@@ -454,23 +457,132 @@ void fill_list(vector<struct rt>& list, vector<int>& root, int i, int n){
     }
     root[i]=0;
 }
-
+void add_list_imaginary(vector<struct rt>& list, int delta, int n){
+    vector<int> root(n+2,0);
+    root[n+1] = delta;
+    DSU basis;
+    basis.init(2*n+2);
+    int N = list.size();
+    for(int index = 0; index<n;index++)
+    {
+        rt input;
+        input.weights = root;
+        input.sum_weights = 2*n*delta;
+        input.i = index+1;
+        int flag = 1;
+        for(int i=0;2*i<N-1;i++)
+        {
+            int a = N-1-i;
+            if(list[a].i == -1)
+            {
+                vector<vector<int>> new_bracket;
+                conjugation(list[i].bracket, list[a].bracket, new_bracket,n);
+                if(new_bracket.size()>0)
+                {
+                    vector<int> new_SL;
+                    if(compare_word(list[i].SLword, list[a].SLword))
+                    {
+                        for(int j =0; j< list[i].SLword.size();j++)
+                            new_SL.push_back(list[i].SLword[j]);
+                        for(int j =0; j< list[a].SLword.size();j++)
+                            new_SL.push_back(list[a].SLword[j]);
+                    }
+                    else
+                    {
+                        for(int j=0;j<new_bracket.size();j++)
+                            new_bracket[j][0]=-new_bracket[j][0];
+                        for(int j =0; j< list[a].SLword.size();j++)
+                            new_SL.push_back(list[a].SLword[j]);
+                        for(int j =0; j< list[i].SLword.size();j++)
+                            new_SL.push_back(list[i].SLword[j]);
+                    }
+                    int check_linear_independence;
+                    if(new_bracket.size()>1)
+                    {
+                        if(new_bracket[0][0]*new_bracket[1][0]<0)
+                            check_linear_independence = basis.sameSet(new_bracket[0][1],new_bracket[1][1] );
+                        else
+                            check_linear_independence = basis.sameSet(new_bracket[0][1],2*n+2-new_bracket[1][1] );
+                    }
+                    else
+                        check_linear_independence = basis.sameSet(new_bracket[0][1],n+1 );
+                    if(check_linear_independence==0 && flag)
+                    {
+                        input.SLword = new_SL;
+                        input.bracket = new_bracket;
+                        flag = 0;
+                    }
+                    else if(check_linear_independence==0&& compare_word(input.SLword,new_SL))
+                    {
+                        input.SLword = new_SL;
+                        input.bracket = new_bracket;
+                    }
+                }
+            }
+        }
+        list.push_back(input);
+        if(input.bracket.size()>1)
+        {
+            if(input.bracket[0][0]*input.bracket[1][0]<0)
+            {
+                basis.unite(input.bracket[0][1], input.bracket[1][1]);
+                basis.unite(2*n+2-input.bracket[0][1],2*n+2- input.bracket[1][1]);
+            }
+            else{
+                basis.unite(input.bracket[0][1],2*n+2- input.bracket[1][1]);
+                basis.unite(2*n+2-input.bracket[0][1], input.bracket[1][1]);
+            }
+        }
+        else
+        {
+            basis.unite(input.bracket[0][1], n+1);
+            basis.unite(2*n+2-input.bracket[0][1], n+1);
+        }
+    }
+}
 int main()
 {
     int n = 5;
     vector<struct rt> list;
     vector<int> root(n+2,0);
     fill_list(list,root,1,n);
-    cout<<"Fin";
-    cout<<list.size()<<"\n";
-    for(int i=0;i<list.size();i++)
+    int M = list.size();
+    vector<int> imaginary_root(n+2,0);
+    imaginary_root[n+1] = 1;
+    for(int i=0;i<M;i++)
     {
-        for(int j=0;j<=n+1;j++)
-            cout<<list[i].weights[j];
-        cout<<" ";
-        for(int j=0;j<list[i].SLword.size();j++)
-            cout<<list[i].SLword[j];
-        cout<<" Height="<<list[i].sum_weights<<"\n";
+        subtract_root(n,imaginary_root, list[M-i-1].weights, root);
+        add_list_real(list,root,n);
     }
+    add_list_imaginary(list, 1,n);
+    root = list[0].weights;
+    root[n+1] = 1;
+    for(int i=1;i<5;i++)
+    {
+        for(int j=0;j<2*M;j++)
+        {    
+            root = list[j].weights;
+            root[n+1] = i;
+            add_list_real(list,root,n);
+        }
+        add_list_imaginary(list,i+1,n);
+    }
+    for(int delta=0;delta<5;delta++)
+    {
+        for(int i=0;i<n;i++)
+        {
+            for(int j=0;j<=n+1;j++)
+                cout<<list[2*M+(2*M+n)*delta+i].weights[j];
+            cout<<"(";
+            for(int j=0;j<list[2*M+(2*M+n)*delta+i].bracket.size();j++)
+                cout<<list[2*M+(2*M+n)*delta+i].bracket[j][0]<<list[2*M+(2*M+n)*delta+i].bracket[j][1]<<list[2*M+(2*M+n)*delta+i].bracket[j][2]<<" ";
+            cout<<")";
+            for(int j=0;j<list[2*M+(2*M+n)*delta+i].SLword.size();j++)
+                cout<<list[2*M+(2*M+n)*delta+i].SLword[j];
+            cout<<" Height="<<list[2*M+(2*M+n)*delta+i].sum_weights<<"\n";
+        }
+        cout<<"\n";
+    }
+    cout<<list.size()<<"\n";
     return 0;
 }
