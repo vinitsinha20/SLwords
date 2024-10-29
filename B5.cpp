@@ -569,20 +569,19 @@ int main()
     }
     for(int delta=0;delta<5;delta++)
     {
+        cout<<"Delta=";
+        cout<<list[(2*M+n)*delta+2*M].weights[n+1]<<"\n";
         for(int i=0;i<n;i++)
         {
-            for(int j=0;j<=n+1;j++)
-                cout<<list[2*M+(2*M+n)*delta+i].weights[j];
-            cout<<"(";
-            for(int j=0;j<list[2*M+(2*M+n)*delta+i].bracket.size();j++)
-                cout<<list[2*M+(2*M+n)*delta+i].bracket[j][0]<<list[2*M+(2*M+n)*delta+i].bracket[j][1]<<list[2*M+(2*M+n)*delta+i].bracket[j][2]<<" ";
-            cout<<")";
+            cout<<"SLword-";
             for(int j=0;j<list[2*M+(2*M+n)*delta+i].SLword.size();j++)
                 cout<<list[2*M+(2*M+n)*delta+i].SLword[j];
-            cout<<" Height="<<list[2*M+(2*M+n)*delta+i].sum_weights<<"\n";
+            cout<<" Bracketing = ";
+            for(int j=0;j<list[2*M+(2*M+n)*delta+i].bracket.size();j++)
+                cout<<"("<<list[2*M+(2*M+n)*delta+i].bracket[j][0]<<")"<<list[2*M+(2*M+n)*delta+i].bracket[j][1]<<list[2*M+(2*M+n)*delta+i].bracket[j][2]<<" ";
+                cout<<"\n";
         }
         cout<<"\n";
     }
-    cout<<list.size()<<"\n";
     return 0;
 }
