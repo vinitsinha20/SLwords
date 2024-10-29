@@ -37,7 +37,7 @@ int equality_roots(int n, vector<int>& root1, vector<int>& root2)
             return 0;
     return 1;
 }
-int compare_letter(int i, int j)
+int compare_letter(int i, int j)// Returns 1 if and only if i<j in the Lyndon word
 {
     if(i==0)
         return 0;
@@ -542,7 +542,7 @@ void add_list_imaginary(vector<struct rt>& list, int delta, int n){
 }
 int main()
 {
-    int n = 5;
+    int n = 5; //the order of the lie algebra
     vector<struct rt> list;
     vector<int> root(n+2,0);
     fill_list(list,root,1,n);
